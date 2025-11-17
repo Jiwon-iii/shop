@@ -28,10 +28,12 @@ export default function LoginPage() {
 
     try {
       const res = await signIn('credentials', {
-        redirect: false,
+        redirect: false, // ⚠️ 이거 꼭 유지
         email,
         password,
       })
+
+      console.log('signIn result:', res)
 
       if (!res) {
         setIsError(true)
@@ -48,8 +50,6 @@ export default function LoginPage() {
       // 로그인 성공
       setIsError(false)
       setMessage('로그인에 성공했습니다.')
-
-      // 원하는 페이지로 이동 (지금은 메인으로)
       router.push('/')
     } catch (error) {
       console.error('Login error:', error)

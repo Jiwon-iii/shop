@@ -136,7 +136,7 @@ export default function SignUpPage() {
           이미 계정이 있으신가요?{' '}
           <button
             type="button"
-            onClick={() => router.push('/auth/login')}
+            onClick={() => router.push('/login')}
             className="font-semibold text-neutral-900 underline-offset-2 hover:underline"
           >
             로그인하기

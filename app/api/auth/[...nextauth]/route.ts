@@ -1,14 +1,17 @@
+// app/api/auth/[...nextauth]/route.ts
 import NextAuth from 'next-auth'
 import Credentials from 'next-auth/providers/credentials'
 import bcrypt from 'bcryptjs'
-import { dbConnect } from '@/db/dbConnect'
-import { User } from '@/db/models/user'
+import dbConnect from '@/db/dbConnect'
+import User from '@/db/models/user'
 
-function isUserType(value: unknown): value is 'normal' | 'admin' {
-  return value === 'normal' || value === 'admin'
-}
-
-const handler = NextAuth({
+// ❗ v5 방식: NextAuth가 객체를 리턴하니까 구조 분해로 GET/POST 꺼내야 함
+export const {
+  handlers: { GET, POST }, // ← 여기서 GET, POST 추출
+  auth,
+  signIn,
+  signOut,
+} = NextAuth({
   providers: [
     Credentials({
       name: 'Credentials',
@@ -17,59 +20,51 @@ const handler = NextAuth({
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials.password) {
+        try {
+          if (!credentials) return null
+
+          const { email, password } = credentials as {
+            email?: unknown
+            password?: unknown
+          }
+
+          if (typeof email !== 'string' || typeof password !== 'string') {
+            return null
+          }
+
+          await dbConnect()
+
+          const userDoc = await User.findOne({ email }).select('+password')
+          if (!userDoc) return null
+          if (typeof userDoc.password !== 'string') return null
+
+          const isValidPassword = await bcrypt.compare(password, userDoc.password)
+          if (!isValidPassword) return null
+
+          const idString = userDoc._id?.toString()
+          if (!idString) return null
+
+          return {
+            id: idString,
+            email: userDoc.email,
+            name: userDoc.nickname,
+          }
+        } catch (error) {
+          console.error('NextAuth authorize error:', error)
           return null
-        }
-
-        await dbConnect()
-
-        const userDoc = await User.findOne({ email: credentials.email }).select('+password')
-        if (!userDoc) {
-          return null
-        }
-
-        if (typeof userDoc.password !== 'string') {
-          return null
-        }
-
-        const passwordHash = userDoc.password as string
-
-        const isValidPassword = await bcrypt.compare(credentials.password, passwordHash)
-        if (!isValidPassword) {
-          return null
-        }
-
-        const userType = isUserType(userDoc.userType) ? userDoc.userType : 'normal'
-
-        return {
-          id: userDoc._id.toString(),
-          email: userDoc.email,
-          name: userDoc.nickname,
-          userType,
         }
       },
     }),
   ],
   session: { strategy: 'jwt' },
   callbacks: {
-    async jwt({ token, user }) {
-      if (user && 'userType' in user && isUserType(user.userType)) {
-        token.userType = user.userType
-      }
-      return token
-    },
     async session({ session, token }) {
-      if (session.user) {
-        if (typeof token.sub === 'string') {
-          session.user.id = token.sub
-        }
-        if (isUserType(token.userType)) {
-          session.user.userType = token.userType
-        }
+      if (session.user && typeof token.sub === 'string') {
+        ;(session.user as { id?: string }).id = token.sub
       }
       return session
     },
   },
+  // 개발 중엔 디버그 켜두면 에러 로그 잘 보임
+  debug: process.env.NODE_ENV === 'development',
 })
-
-export { handler as GET, handler as POST }
