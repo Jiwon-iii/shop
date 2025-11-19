@@ -1,80 +1,44 @@
-import Image from 'next/image'
+import dbConnect from '@/db/dbConnect'
+import Product, { ProductLean } from '@/db/models/product'
+import ProductCard from '@/components/ProductCard'
+import { ProductDTO } from '@/types/product'
 
-export default function Home() {
+export const dynamic = 'force-dynamic'
+
+export default async function HomePage() {
+  await dbConnect()
+
+  // MongoDB에서 상품 목록 가져오기
+  const rawProducts = await Product.find().sort({ createdAt: -1 }).lean<ProductLean[]>()
+
+  // DB 타입(ProductLean) → 화면용 타입(ProductDTO)으로 변환
+  const products: ProductDTO[] = rawProducts.map((p: ProductLean) => ({
+    _id: p._id.toString(),
+    name: p.name,
+    price: p.price,
+    description: p.description ?? '',
+    imageUrl: p.imageUrl ?? '',
+    category: p.category ?? '',
+  }))
+
   return (
-    <div className="grid min-h-screen grid-rows-[20px_1fr_20px] items-center justify-items-center gap-16 p-8 pb-20 font-[family-name:var(--font-geist-sans)] sm:p-20">
-      <main className="row-start-2 flex flex-col items-center gap-8 sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-center font-[family-name:var(--font-geist-mono)] text-sm sm:text-left">
-          <li className="mb-2">
-            Get started by editing{' '}
-            <code className="rounded bg-black/[.05] px-1 py-0.5 font-semibold dark:bg-white/[.06]">app/page.tsx</code>.
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    <main className="mx-auto max-w-6xl px-4 py-10">
+      <section className="mb-8">
+        <h1 className="text-2xl font-bold text-neutral-900 md:text-3xl">상품 목록</h1>
+        <p className="mt-2 text-sm text-neutral-500">지금 등록된 상품을 확인해 보세요.</p>
+      </section>
 
-        <div className="flex flex-col items-center gap-4 sm:flex-row">
-          <a
-            className="flex h-10 items-center justify-center gap-2 rounded-full border border-solid border-transparent bg-foreground px-4 text-sm text-background transition-colors hover:bg-[#383838] sm:h-12 sm:px-5 sm:text-base dark:hover:bg-[#ccc]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="flex h-10 items-center justify-center rounded-full border border-solid border-black/[.08] px-4 text-sm transition-colors hover:border-transparent hover:bg-[#f2f2f2] sm:h-12 sm:min-w-44 sm:px-5 sm:text-base dark:border-white/[.145] dark:hover:bg-[#1a1a1a]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex flex-wrap items-center justify-center gap-6">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image aria-hidden src="https://nextjs.org/icons/file.svg" alt="File icon" width={16} height={16} />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image aria-hidden src="https://nextjs.org/icons/window.svg" alt="Window icon" width={16} height={16} />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image aria-hidden src="https://nextjs.org/icons/globe.svg" alt="Globe icon" width={16} height={16} />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+      {products.length === 0 ? (
+        <p className="rounded-xl bg-neutral-50 p-6 text-center text-sm text-neutral-500">
+          아직 등록된 상품이 없습니다. 테스트용 상품 데이터를 먼저 추가해 보세요.
+        </p>
+      ) : (
+        <section className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+          {products.map((prod) => (
+            <ProductCard key={prod._id} product={prod} />
+          ))}
+        </section>
+      )}
+    </main>
   )
 }

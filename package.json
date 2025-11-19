@@ -7,12 +7,14 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "lint-fix": "eslint . --fix"
+    "lint-fix": "eslint . --fix",
+    "seed": "ts-node -P tsconfig.seed.json scripts/seedProducts.ts"
   },
   "dependencies": {
     "@types/jsonwebtoken": "^9.0.7",
     "axios": "^1.7.7",
     "bcryptjs": "^3.0.3",
+    "dotenv": "^17.2.3",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.19.3",
     "next": "^14.2.13",
@@ -37,6 +39,7 @@
     "prettier": "^3.3.3",
     "prettier-plugin-tailwindcss": "^0.6.8",
     "tailwindcss": "^3.4.1",
+    "ts-node": "^10.9.2",
     "typescript": "^5"
   },
   "husky": {
