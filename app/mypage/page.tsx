@@ -1,66 +1,45 @@
-// app/mypage/page.tsx
 'use client'
 
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
 
 export default function MyPage() {
-  const router = useRouter()
-  const { data: session, status } = useSession()
+  const { data: session } = useSession()
 
-  // 로그인 안 했으면 /login으로 보내기
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.replace('/login')
-    }
-  }, [status, router])
-
-  if (status === 'loading') {
+  if (!session) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-neutral-100">
-        <p className="text-sm text-neutral-600">세션 확인 중...</p>
+      <main className="mx-auto max-w-xl px-6 py-10">
+        <p className="text-center text-neutral-500">로그인 후 이용해주세요.</p>
+        <div className="mt-4 text-center">
+          <Link href="/login" className="text-blue-600 hover:underline">
+            로그인 하러가기
+          </Link>
+        </div>
       </main>
     )
   }
 
-  if (status === 'unauthenticated') {
-    // 위 useEffect에서 이미 /login으로 보내고 있어서
-    // 여기선 그냥 빈 화면만 잠깐 보여줘도 됨.
-    return null
-  }
-
-  // 여기까지 오면 로그인된 상태
-  const userEmail = session?.user?.email ?? ''
-  const userId = session?.user?.id ?? ''
-  const userType = session?.user?.userType ?? 'normal'
-
   return (
-    <main className="flex min-h-screen items-center justify-center bg-neutral-100 px-4">
-      <section className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg">
-        <h1 className="text-2xl font-bold text-neutral-900">마이페이지</h1>
-        <p className="mt-1 text-sm text-neutral-500">현재 로그인 중인 계정 정보입니다.</p>
+    <main className="mx-auto max-w-xl px-6 py-10">
+      <h1 className="mb-6 text-2xl font-bold">마이페이지</h1>
 
-        <div className="mt-6 space-y-2 text-sm text-neutral-800">
-          <p>
-            <span className="font-medium">이메일:</span> {userEmail}
-          </p>
-          <p>
-            <span className="font-medium">사용자 ID:</span> {userId}
-          </p>
-          <p>
-            <span className="font-medium">권한:</span> {userType}
-          </p>
-        </div>
+      <div className="space-y-4 rounded-xl border bg-white p-5 shadow-sm">
+        <p className="text-sm">
+          <span className="font-semibold">이메일: </span>
+          {session.user.email}
+        </p>
 
-        <button
-          type="button"
-          onClick={() => signOut({ callbackUrl: '/login' })}
-          className="mt-8 w-full rounded-lg bg-neutral-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-neutral-800"
-        >
+        <Link href="/orders">
+          <Button className="w-full" variant="outline">
+            구매 내역 보기
+          </Button>
+        </Link>
+
+        <Button className="w-full" variant="destructive" onClick={() => signOut({ callbackUrl: '/' })}>
           로그아웃
-        </button>
-      </section>
+        </Button>
+      </div>
     </main>
   )
 }
