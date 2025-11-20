@@ -5,8 +5,8 @@ import { getCart, removeFromCart, clearCart, type CartItem } from '@/lib/cart'
 import { Button } from '@/components/ui/button'
 
 export default function CartPage() {
-  // 🔥 cart의 타입을 CartItem[]으로 명시
   const [cart, setCart] = useState<CartItem[]>([])
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     setCart(getCart())
@@ -23,6 +23,58 @@ export default function CartPage() {
   }
 
   const totalPrice = cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
+
+  const handlePurchase = async () => {
+    console.log('🛒 구매하기 버튼 클릭')
+    if (cart.length === 0) {
+      alert('장바구니가 비어 있습니다.')
+      return
+    }
+
+    if (loading) return
+
+    try {
+      setLoading(true)
+      alert('구매 요청을 보내는 중입니다...')
+
+      const payload = {
+        items: cart.map((item) => ({
+          productId: item.id,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          imageUrl: item.imageUrl,
+        })),
+        totalPrice,
+      }
+
+      const res = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      console.log('📡/api/orders 응답 status:', res.status)
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        console.error('❌ 주문 실패 응답:', data)
+        alert('구매 중 오류가 발생했습니다.')
+        return
+      }
+
+      const data = await res.json()
+      console.log('✅ 주문 성공 응답:', data)
+
+      clearCart()
+      setCart([])
+      alert('구매가 완료되었습니다.\n주문번호: ' + data.orderId)
+    } catch (e) {
+      console.error('❌ 구매 요청을 보내는 중 오류:', e)
+      alert('구매 요청을 보내는 중 오류가 발생했습니다.')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-10">
@@ -54,7 +106,13 @@ export default function CartPage() {
             장바구니 비우기
           </Button>
 
-          <Button className="w-full bg-black text-white hover:bg-neutral-800">구매하기</Button>
+          <Button
+            className="w-full bg-black text-white hover:bg-neutral-800"
+            onClick={handlePurchase}
+            disabled={loading}
+          >
+            {loading ? '구매 처리 중...' : '구매하기'}
+          </Button>
         </div>
       )}
     </main>
