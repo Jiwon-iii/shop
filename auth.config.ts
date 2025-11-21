@@ -1,12 +1,11 @@
-// app/api/auth/[...nextauth]/route.ts
-import NextAuth from 'next-auth'
+// auth.config.ts
+import type { NextAuthConfig } from 'next-auth'
 import Credentials from 'next-auth/providers/credentials'
 import bcrypt from 'bcryptjs'
 import dbConnect from '@/db/dbConnect'
 import User from '@/db/models/user'
 
-// NextAuth v5: NextAuth가 handlers/auth/signIn/signOut를 리턴
-const authHandler = NextAuth({
+export const authConfig: NextAuthConfig = {
   providers: [
     Credentials({
       name: 'Credentials',
@@ -60,14 +59,5 @@ const authHandler = NextAuth({
       return session
     },
   },
-  // 개발 중엔 디버그 켜두면 에러 로그 잘 보임
   debug: process.env.NODE_ENV === 'development',
-})
-
-// ⬅︎ 여기서 handlers만 꺼내고
-const {
-  handlers: { GET, POST },
-} = authHandler
-
-// ⬅︎ 실제로는 GET/POST만 export
-export { GET, POST }
+}
