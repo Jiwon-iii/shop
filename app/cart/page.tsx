@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { getCart, removeFromCart, clearCart, type CartItem } from '@/lib/cart'
+import { getCart, removeFromCart, clearCart, updateCartQuantity, type CartItem } from '@/lib/cart'
 import { Button } from '@/components/ui/button'
 
 export default function CartPage() {
@@ -23,6 +23,20 @@ export default function CartPage() {
   }
 
   const totalPrice = cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
+
+  // 🔥 수량 증가
+  const handleIncrease = (id: string, currentQuantity: number) => {
+    const nextQuantity = currentQuantity + 1
+    updateCartQuantity(id, nextQuantity)
+    setCart(getCart())
+  }
+
+  // 🔥 수량 감소
+  const handleDecrease = (id: string, currentQuantity: number) => {
+    const nextQuantity = currentQuantity - 1
+    updateCartQuantity(id, nextQuantity)
+    setCart(getCart())
+  }
 
   const handlePurchase = async () => {
     console.log('🛒 구매하기 버튼 클릭')
@@ -53,7 +67,8 @@ export default function CartPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
-      console.log('📡/api/orders 응답 status:', res.status)
+
+      console.log('📡 /api/orders 응답 status:', res.status)
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
@@ -89,8 +104,27 @@ export default function CartPage() {
             <div className="flex-1">
               <p className="font-semibold">{item.name}</p>
               <p className="text-sm text-neutral-500">{item.price.toLocaleString()}원</p>
-              <p className="text-sm text-neutral-500">수량: {item.quantity}</p>
+
+              {/*  수량 조절 UI */}
+              <div className="mt-1 flex items-center gap-2 text-sm text-neutral-600">
+                <button
+                  type="button"
+                  className="flex h-7 w-7 items-center justify-center rounded-full border border-neutral-300 text-sm"
+                  onClick={() => handleDecrease(item.id, item.quantity)}
+                >
+                  -
+                </button>
+                <span className="min-w-[24px] text-center">{item.quantity}</span>
+                <button
+                  type="button"
+                  className="flex h-7 w-7 items-center justify-center rounded-full border border-neutral-300 text-sm"
+                  onClick={() => handleIncrease(item.id, item.quantity)}
+                >
+                  +
+                </button>
+              </div>
             </div>
+
             <Button size="sm" variant="destructive" onClick={() => handleRemove(item.id)}>
               삭제
             </Button>
